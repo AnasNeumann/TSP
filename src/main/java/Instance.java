@@ -23,7 +23,7 @@ public class Instance {
         Instance i = new Instance(); // 1. create new problem
         i.paths = new int[size][size]; // 2. build the path with distances = 0
         i.start = new Random().nextInt(size); // 3. generate random start
-        for(int v1=0; v1<size; v1++){
+        for(int v1=0; v1<size-1; v1++){
             i.paths[v1][v1] = 0;
             for(int v2=v1+1; v2<size; v2++){
                 // 4. generate random distances between cities

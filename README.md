@@ -20,7 +20,7 @@ A simple Travelling Salesman Problem to solve (optimize) with IBM Cplex - Learni
 4. Add the Ilog Cplex folder (downloaded from the IBM website) inside a /lib folder:
 ![cplex-folder](/documentation/cplex.png)
 
-5. Run the commande "_Maven -> Reimport_" to link your code and Ilog Cplex
+5. Run the commande "_Maven -> Reimport_" to link your code with Ilog Cplex
 
 6. Create a new Maven running configuration with the following command line
 ```shell
@@ -51,7 +51,7 @@ public static Instance randomInit(int size, int minDistance, int maxDistance){
     Instance i = new Instance(); // 1. create new problem
     i.paths = new int[size][size]; // 2. build the path with distances = 0
     i.start = new Random().nextInt(size); // 3. generate random start
-    for(int v1=0; v1<size; v1++){
+    for(int v1=0; v1<size-1; v1++){
         i.paths[v1][v1] = 0;
         for(int v2=v1+1; v2<size; v2++){
             // 4. generate random distances between cities
@@ -76,10 +76,13 @@ public class Solution {
         public static Solution init(int size, IloCplex cplex) throws IloException {
             Solution s = new Solution();
             s.selectedPaths = new IloIntVar[size][size];
-            for(int v1=0; v1<size; v1++)
-                for(int v2=0; v2<size; v2++)
+            for(int v1=0; v1<size-1; v1++) {
+                for (int v2 = v1+1; v2 < size; v2++) {
                     // Create only boolean variables: selected or not
-                    s.selectedPaths[v1][v2] = cplex.boolVar("PATH_{"+v1+","+v2+"}");
+                    s.selectedPaths[v1][v2] = cplex.boolVar("PATH_{" + v1 + "," + v2 + "}");
+                    s.selectedPaths[v2][v1] = cplex.boolVar("PATH_{" + v2 + "," + v1 + "}");
+                }
+            }
             return s;
         }
     }
@@ -92,7 +95,7 @@ public static Instance randomInit(IloCplex cplex, int size, int minDistance, int
     Instance i = new Instance(); // 1. create new problem
     i.paths = new int[size][size]; // 2. build the path with distances = 0
     i.start = new Random().nextInt(size); // 3. generate random start
-    for(int v1=0; v1<size; v1++){
+    for(int v1=0; v1<size-1; v1++){
         i.paths[v1][v1] = 0;
         for(int v2=v1+1; v2<size; v2++){
             // 4. generate random distances between cities
@@ -120,7 +123,7 @@ public void displayPath(IloCplex cplex, int from) throws IloException {
 
 public int nextCity(IloCplex cplex, int from) throws IloException {
     for(int to=0; to<selectedPaths.length; to++)
-      if((int) cplex.getValue(selectedPaths[from][to])>1)
+      if(to != from && (int) cplex.getValue(selectedPaths[from][to])>0)
           return to;
     return -1;
 }
@@ -165,8 +168,8 @@ public class Engine {
 public Instance solve(Instance i){
     long start = System.currentTimeMillis();
     try {
-        buildObjectiveFunction(); // 1. Build the objective function based on i
-        buildConstraints(); // 2. Build the constraints function based on i
+        buildObjectiveFunction(i); // 1. Build the objective function based on i
+        buildConstraints(i); // 2. Build the constraints function based on i
         if(cplex.solve()){ // 3. Cplex found a feasible or optimal solution
             cplex.output().println("SUCCESS ! Solution status = " + cplex.getStatus()); // 3.1 Print the status of the solution
             i.solution.displayPath(cplex, i.start); // 3.2 Display the details of the solution
@@ -182,7 +185,40 @@ public Instance solve(Instance i){
 }
 ```
 
-15. Add (to the engine) a method that build the objective function
+15. Add (to the engine) a method that build the objective function: Minimize the total distance of all selected paths
+```java
+public void buildObjectiveFunction(Instance i) throws IloException {
+    IloLinearNumExpr obj = cplex.linearNumExpr();
+    for(int v1=0; v1<i.paths.length -1; v1++) {
+        for (int v2 = v1+1; v2 < i.paths.length; v2++) {
+            obj.addTerm(i.paths[v1][v2], i.solution.selectedPaths[v1][v2]);
+            obj.addTerm(i.paths[v2][v1], i.solution.selectedPaths[v2][v1]);
+        }
+    }
+    cplex.addMinimize(obj);
+}
+```
 
+16. Add (to the engine) a method that build the three (3) main constraints (with respect to the Dantzig–Fulkerson–Johnson formulation)
+```java
+public void buildConstraints(Instance i) throws IloException {
+    IloLinearNumExpr totalPaths = cplex.linearNumExpr();
+    for(int v1=0; v1<i.paths.length -1; v1++) {
+        IloLinearNumExpr totalFromCity = cplex.linearNumExpr();
+        IloLinearNumExpr totalToCity   = cplex.linearNumExpr();
+        for (int v2 = v1+1; v2 < i.paths.length; v2++) {
+            totalFromCity.addTerm(1, i.solution.selectedPaths[v1][v2]);
+            totalToCity.addTerm(1, i.solution.selectedPaths[v2][v1]);
+            totalPaths.addTerm(1, i.solution.selectedPaths[v1][v2]);
+            totalPaths.addTerm(1, i.solution.selectedPaths[v2][v1]);
+        }
+        cplex.addEq(1, totalFromCity, "C1_"+v1); // C1. Exactly one (no more no less) path is selected to go to a city
+        cplex.addEq(1, totalToCity, "C2_"+v1); // C2. Exactly one (no more no less) path is selected to go from a city
+    }
+    // 3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
+    if(i.paths.length>=2)
+        cplex.addLe(totalPaths, i.paths.length - 1, "C3");
+}
+```
 
 ## IV. Try your code and display the results

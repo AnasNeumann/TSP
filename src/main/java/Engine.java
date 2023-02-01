@@ -1,4 +1,5 @@
 import ilog.concert.IloException;
+import ilog.concert.IloLinearNumExpr;
 import ilog.cplex.IloCplex;
 
 /**
@@ -36,8 +37,8 @@ public class Engine {
     public Instance solve(Instance i){
         long start = System.currentTimeMillis();
         try {
-            buildObjectiveFunction(); // 1. Build the objective function based on i
-            buildConstraints(); // 2. Build the constraints function based on i
+            buildObjectiveFunction(i); // 1. Build the objective function based on i
+            buildConstraints(i); // 2. Build the constraints function based on i
             if(cplex.solve()){ // 3. Cplex found a feasible or optimal solution
                 cplex.output().println("SUCCESS ! Solution status = " + cplex.getStatus()); // 3.1 Print the status of the solution
                 i.solution.displayPath(cplex, i.start); // 3.2 Display the details of the solution
@@ -52,12 +53,45 @@ public class Engine {
         return i;
     }
 
-    public void buildObjectiveFunction(){
-
+    /**
+     * Minimize the total distance of all selected paths
+     * @param i
+     * @throws IloException
+     */
+    public void buildObjectiveFunction(Instance i) throws IloException {
+        IloLinearNumExpr obj = cplex.linearNumExpr();
+        for(int v1=0; v1<i.paths.length -1; v1++) {
+            for (int v2 = v1+1; v2 < i.paths.length; v2++) {
+                obj.addTerm(i.paths[v1][v2], i.solution.selectedPaths[v1][v2]);
+                obj.addTerm(i.paths[v2][v1], i.solution.selectedPaths[v2][v1]);
+            }
+        }
+        cplex.addMinimize(obj);
     }
 
-    public void buildConstraints(){
 
+    /**
+     * Build exactly three constraints
+     * Dantzig–Fulkerson–Johnson formulation
+     * @param i
+     * @throws IloException
+     */
+    public void buildConstraints(Instance i) throws IloException {
+        IloLinearNumExpr totalPaths = cplex.linearNumExpr();
+        for(int v1=0; v1<i.paths.length -1; v1++) {
+            IloLinearNumExpr totalFromCity = cplex.linearNumExpr();
+            IloLinearNumExpr totalToCity   = cplex.linearNumExpr();
+            for (int v2 = v1+1; v2 < i.paths.length; v2++) {
+                totalFromCity.addTerm(1, i.solution.selectedPaths[v1][v2]);
+                totalToCity.addTerm(1, i.solution.selectedPaths[v2][v1]);
+                totalPaths.addTerm(1, i.solution.selectedPaths[v1][v2]);
+                totalPaths.addTerm(1, i.solution.selectedPaths[v2][v1]);
+            }
+            cplex.addEq(1, totalFromCity, "C1_"+v1); // C1. Exactly one (no more no less) path is selected to go to a city
+            cplex.addEq(1, totalToCity, "C2_"+v1); // C2. Exactly one (no more no less) path is selected to go from a city
+        }
+        // 3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
+        if(i.paths.length>=2)
+            cplex.addLe(totalPaths, i.paths.length - 1, "C3");
     }
-
 }

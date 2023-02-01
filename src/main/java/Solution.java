@@ -18,10 +18,13 @@ public class Solution {
     public static Solution init(int size, IloCplex cplex) throws IloException {
         Solution s = new Solution();
         s.selectedPaths = new IloIntVar[size][size];
-        for(int v1=0; v1<size; v1++)
-            for(int v2=0; v2<size; v2++)
+        for(int v1=0; v1<size-1; v1++) {
+            for (int v2 = v1+1; v2 < size; v2++) {
                 // Create only boolean variables: selected or not
-                s.selectedPaths[v1][v2] = cplex.boolVar("PATH_{"+v1+","+v2+"}");
+                s.selectedPaths[v1][v2] = cplex.boolVar("PATH_{" + v1 + "," + v2 + "}");
+                s.selectedPaths[v2][v1] = cplex.boolVar("PATH_{" + v2 + "," + v1 + "}");
+            }
+        }
         return s;
     }
 
@@ -49,7 +52,7 @@ public class Solution {
      */
     public int nextCity(IloCplex cplex, int from) throws IloException {
         for(int to=0; to<selectedPaths.length; to++)
-          if((int) cplex.getValue(selectedPaths[from][to])>1)
+          if(to != from && (int) cplex.getValue(selectedPaths[from][to])>0)
               return to;
         return -1;
     }
