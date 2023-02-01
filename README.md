@@ -111,13 +111,18 @@ public static Instance randomInit(IloCplex cplex, int size, int minDistance, int
 
 12. Create a recursive/iterative method to display the final solution
 ```java
-public void displayPath(IloCplex cplex, int from) throws IloException {
+public void displayPath(IloCplex cplex, Instance i) throws IloException {
     cplex.output().println("Total distance: "+cplex.getObjValue());
     cplex.output().print("Path: ");
+    int from = i.start;
+    int to;
     do{
-        cplex.output().print(from);
-        from = nextCity(cplex, from);
-        if(from != -1) cplex.output().print("->");
+        cplex.output().print("City_"+from);
+        to = nextCity(cplex, from);
+        if(to != -1){
+            cplex.output().print(" -> ("+i.paths[from][to]+") ");
+            from = to;
+        }
     } while(from != 1);
 }
 
@@ -128,7 +133,6 @@ public int nextCity(IloCplex cplex, int from) throws IloException {
     return -1;
 }
 ```
-
 
 ## III. Create the search engine that solve the problem (with respect to the constraints and objective function)
 
@@ -172,7 +176,7 @@ public Instance solve(Instance i){
         buildConstraints(i); // 2. Build the constraints function based on i
         if(cplex.solve()){ // 3. Cplex found a feasible or optimal solution
             cplex.output().println("SUCCESS ! Solution status = " + cplex.getStatus()); // 3.1 Print the status of the solution
-            i.solution.displayPath(cplex, i.start); // 3.2 Display the details of the solution
+            i.solution.displayPath(cplex, i); // 3.2 Display the details of the solution
         } else // 4. Cplex didn't found any solution
             cplex.output().println("ERROR ! Solution status = " + cplex.getStatus());
         double end = (System.currentTimeMillis() - start)/1000.0;
@@ -222,3 +226,24 @@ public void buildConstraints(Instance i) throws IloException {
 ```
 
 ## IV. Try your code and display the results
+
+17. Create a class Main with a main method and call the engine to generate a random instance and solve it
+```java
+import ilog.concert.IloException;
+
+public class Main {
+    public static final int NUMBER_CITIES = 6; // 1. Four cities
+    public static final int MAX_DISTANCE = 15; // 2. Maximum 15 miles
+    public static final int MIN_DISTANCE = 1; // 3. Minimum 1 miles
+
+    public static void main(String[] args) {
+        try {
+            Engine.get().solve(Instance.randomInit(Engine.get().cplex, NUMBER_CITIES, MIN_DISTANCE, MAX_DISTANCE));
+        } catch (IloException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+19. Example of result:

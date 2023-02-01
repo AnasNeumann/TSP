@@ -31,15 +31,21 @@ public class Solution {
     /**
      * Display the solution
      * @param cplex
+     * @param i
      * @throws IloException
      */
-    public void displayPath(IloCplex cplex, int from) throws IloException {
+    public void displayPath(IloCplex cplex, Instance i) throws IloException {
         cplex.output().println("Total distance: "+cplex.getObjValue());
         cplex.output().print("Path: ");
+        int from = i.start;
+        int to;
         do{
-            cplex.output().print(from);
-            from = nextCity(cplex, from);
-            if(from != -1) cplex.output().print("->");
+            cplex.output().print("City_"+from);
+            to = nextCity(cplex, from);
+            if(to != -1){
+                cplex.output().print(" -> ("+i.paths[from][to]+") ");
+                from = to;
+            }
         } while(from != 1);
     }
 

@@ -41,7 +41,7 @@ public class Engine {
             buildConstraints(i); // 2. Build the constraints function based on i
             if(cplex.solve()){ // 3. Cplex found a feasible or optimal solution
                 cplex.output().println("SUCCESS ! Solution status = " + cplex.getStatus()); // 3.1 Print the status of the solution
-                i.solution.displayPath(cplex, i.start); // 3.2 Display the details of the solution
+                i.solution.displayPath(cplex, i); // 3.2 Display the details of the solution
             } else // 4. Cplex didn't found any solution
                 cplex.output().println("ERROR ! Solution status = " + cplex.getStatus());
             double end = (System.currentTimeMillis() - start)/1000.0;
