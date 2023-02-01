@@ -2,9 +2,11 @@ import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
 import ilog.cplex.IloCplex;
 
+/**
+ * A solution to the problem
+ */
 public class Solution {
     public IloIntVar[][] selectedPaths;
-    public IloIntVar totalDistance;
 
     /**
      * Init a new solution
@@ -18,6 +20,7 @@ public class Solution {
         s.selectedPaths = new IloIntVar[size][size];
         for(int v1=0; v1<size; v1++)
             for(int v2=0; v2<size; v2++)
+                // Create only boolean variables: selected or not
                 s.selectedPaths[v1][v2] = cplex.boolVar("PATH_{"+v1+","+v2+"}");
         return s;
     }
@@ -28,12 +31,12 @@ public class Solution {
      * @throws IloException
      */
     public void displayPath(IloCplex cplex, int from) throws IloException {
-        int distance = (int) cplex.getValue(totalDistance);
-        System.out.println("Total distance: "+distance);
+        cplex.output().println("Total distance: "+cplex.getObjValue());
+        cplex.output().print("Path: ");
         do{
-            System.out.print(from);
+            cplex.output().print(from);
             from = nextCity(cplex, from);
-            if(from != -1) System.out.print("->");
+            if(from != -1) cplex.output().print("->");
         } while(from != 1);
     }
 
