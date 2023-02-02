@@ -239,31 +239,35 @@ public void buildObjectiveFunction(Instance i) throws IloException {
 }
 ```
 
-16. Add (to the engine) a method that build the three (3) main constraints (with respect to the Dantzig–Fulkerson–Johnson formulation)
+16. Add (to the engine) a method that build the two (2) main constraints
 ```java
 public void buildConstraints(Instance i) throws IloException {
-    IloLinearNumExpr totalPaths = cplex.linearNumExpr();
-    for(int v1=0; v1<i.paths.length -1; v1++) {
+    for(int v1=0; v1<i.paths.length; v1++) {
         IloLinearNumExpr totalFromCity = cplex.linearNumExpr();
         IloLinearNumExpr totalToCity   = cplex.linearNumExpr();
-        for (int v2 = v1+1; v2 < i.paths.length; v2++) {
-            totalFromCity.addTerm(1, i.solution.selectedPaths[v1][v2]);
-            totalToCity.addTerm(1, i.solution.selectedPaths[v2][v1]);
-            totalPaths.addTerm(1, i.solution.selectedPaths[v1][v2]);
-            totalPaths.addTerm(1, i.solution.selectedPaths[v2][v1]);
+        for (int v2=0; v2<i.paths.length; v2++) {
+            if(v1 != v2){
+                totalFromCity.addTerm(1, i.solution.selectedPaths[v1][v2]);
+                totalToCity.addTerm(1, i.solution.selectedPaths[v2][v1]);
+            }
         }
         cplex.addEq(1, totalFromCity, "C1_"+v1); // C1. Exactly one (no more no less) path is selected to go to a city
         cplex.addEq(1, totalToCity, "C2_"+v1); // C2. Exactly one (no more no less) path is selected to go from a city
     }
-    // 3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
-    if(i.paths.length>=2)
-        cplex.addLe(totalPaths, i.paths.length - 1, "C3");
 }
 ```
 
+16. Additional constraint for the Dantzig–Fulkerson–Johnson formulation (avoid sub-tours):
+```java
+//TODO
+```
+
+17. Understand the concept of subsets
+![calcul-of-subsets](/documentation/calcul.png)
+
 ## IV. Try your code and display the results
 
-17. Create a class Main with a main method and call the engine to generate a random instance and solve it
+18. Create a class Main with a main method and call the engine to generate a random instance and solve it
 ```java
 import ilog.concert.IloException;
 

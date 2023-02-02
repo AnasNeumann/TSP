@@ -77,38 +77,57 @@ public class Engine {
      * @throws IloException
      */
     public void buildConstraints(Instance i) throws IloException {
-        IloLinearNumExpr totalPaths = cplex.linearNumExpr();
         for(int v1=0; v1<i.paths.length; v1++) {
             IloLinearNumExpr totalFromCity = cplex.linearNumExpr();
             IloLinearNumExpr totalToCity   = cplex.linearNumExpr();
-            for (int v2 = 0; v2 < i.paths.length; v2++) {
+            for (int v2=0; v2<i.paths.length; v2++) {
                 if(v1 != v2){
                     totalFromCity.addTerm(1, i.solution.selectedPaths[v1][v2]);
                     totalToCity.addTerm(1, i.solution.selectedPaths[v2][v1]);
-                    totalPaths.addTerm(1, i.solution.selectedPaths[v1][v2]);
                 }
             }
             cplex.addEq(1, totalFromCity, "C1_"+v1); // C1. Exactly one (no more no less) path is selected to go to a city
             cplex.addEq(1, totalToCity, "C2_"+v1); // C2. Exactly one (no more no less) path is selected to go from a city
         }
 
-        // 3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
-        if(i.paths.length>=2)
-            cplex.addLe(totalPaths, i.paths.length - 1, "C3");
+        // C3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
+        int[][] subsets = buildsubsets(i.paths.length);
+        for(int sub=0; sub<subsets.length; sub++){
+            int[] subset = subsets[sub];
+            IloLinearNumExpr totalPaths = cplex.linearNumExpr();
+            for(int v1=0; v1<subset.length; v1++)
+                for (int v2=0; v2<subset.length; v2++)
+                    if (v1 != v2) totalPaths.addTerm(1, i.solution.selectedPaths[subset[v1]][subset[v2]]);
+            cplex.addLe(totalPaths, subset.length - 1, "C3_"+subset);
+        }
     }
 
     /**
      * Build all the subsets
-     * @param i
+     * @param nbrCities
      * @return int[][] subsets
      */
-    public int[][] buildsubsets(Instance i){
-        int[][] subsets = new int[nbrSubtours(i.paths.length)][];
-        int currentSize = 2;
-        int maxSubtours = nbrSubtours(i.paths.length, currentSize);
-        for(int n=0; n<subsets.length; n++){
-            subsets[n] = new int[n];
+    public int[][] buildsubsets(int nbrCities){
+        int[][] subsets = new int[nbrSubtours(nbrCities)][];
+        int i = 0;
+        for(int currentSize=2; currentSize<nbrCities; currentSize++){
+            int[][] subsetsBySize = buildSubsetsBySize(nbrCities, currentSize);
+            for(int j=0; j<subsetsBySize.length; j++)
+                subsets[i+j] = subsetsBySize[j];
+            i += subsetsBySize.length;
         }
+        return subsets;
+    }
+
+    /**
+     * Build all the subsets of a specific size
+     * @param nbrCities
+     * @param currentSize
+     * @return int[][] subsets
+     */
+    public int[][] buildSubsetsBySize(int nbrCities, int currentSize){
+        int[][] subsets = new int[nbrSubtours(nbrCities, currentSize)][];
+
         return subsets;
     }
 
