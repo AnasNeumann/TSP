@@ -274,7 +274,7 @@ public void buildConstraints(Instance i) throws IloException {
 
     // C3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
     int[][] subsets = buildsubsets(i.paths.length);
-    cplex.output().println("All subset to test: ");
+    cplex.output().println("All subsets to test: ");
     cplex.output().println(Arrays.deepToString(subsets));
     for(int sub=0; sub<subsets.length; sub++){
         int[] subset = subsets[sub];
@@ -392,7 +392,7 @@ Starting city = 0
 ===========*=*=*=============
       SUBSETS CREATION
 ===========*=*=*=============
-All subset to test: 
+All subsets to test: 
 [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3], [0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]]
 
 ===========*=*=*=============

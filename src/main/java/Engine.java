@@ -96,7 +96,7 @@ public class Engine {
 
         // C3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
         int[][] subsets = buildsubsets(i.paths.length);
-        cplex.output().println("All subset to test: ");
+        cplex.output().println("All subsets to test: ");
         cplex.output().println(Arrays.deepToString(subsets));
         for(int sub=0; sub<subsets.length; sub++){
             int[] subset = subsets[sub];
@@ -204,7 +204,7 @@ public class Engine {
      * @param n
      * @return n!
      */
-    int factorial(int n) {
+    public int factorial(int n) {
         if (n<=0) return 1;
         return n * factorial(n-1);
     }
