@@ -135,7 +135,7 @@ public class Engine {
      * @param level
      * @returnint[][] subsets
      */
-    int[][] buildPosition(int[][] subsets, int startSubsets, int startingCity, int citiesToTest, int level, int positionToFill){
+    public int[][] buildPosition(int[][] subsets, int startSubsets, int startingCity, int citiesToTest, int level, int positionToFill){
         int nbrAppearanceAtPosition = 0;
         int firstAppearance = startSubsets;
         for(int city=startingCity; city<citiesToTest; city++){
@@ -156,7 +156,7 @@ public class Engine {
      * @param city
      * @return
      */
-    int nbrSubsets(int level, int currentNbrCities, int city){
+    public int nbrSubsets(int level, int currentNbrCities, int city){
         if(level <= 0) return 1;
         int totalSubsets = 0;
         for(int nextCity = city+1; nextCity<currentNbrCities; nextCity++)
