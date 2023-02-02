@@ -1,13 +1,48 @@
 # TSP
 A simple Travelling Salesman Problem to solve (optimize) with IBM Cplex - Learning Purpose
 
+![problem-studied](/documentation/problem.png)
+
 ## I. Complete process to install and link Ilog Cplex
 1. Download and install Cplex and Ilog Cplex
 
 2. Create a maven project to generate a _pom.xml_ file (used to install external tools like Ilog Cplex)
 
-3. Add the following entry to the _pom.xml_ file to install the Ilog Cplex engine: 
+3. Add the following entry to the _pom.xml_ file to install the Ilog Cplex engine and build from the src folder: 
 ```xml
+<build>
+    <sourceDirectory>src/main/java</sourceDirectory>
+    <plugins>
+        <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.6.1</version>
+            <configuration>
+                <source>1.8</source>
+                <target>1.8</target>
+            </configuration>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>3.2.4</version>
+            <executions>
+                <execution>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>shade</goal>
+                    </goals>
+                    <configuration>
+                        <transformers>
+                            <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <mainClass>gl.Main</mainClass>
+                            </transformer>
+                        </transformers>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+ </build>
  <dependencies>
     <dependency>
         <groupId>cplex</groupId>
@@ -25,7 +60,7 @@ A simple Travelling Salesman Problem to solve (optimize) with IBM Cplex - Learni
 6. Create a new Maven running configuration with the following command line
 ```shell
 # Select the correct local path to your main class
-compile exec:java -D exec.mainClass=main.java.Main
+compile exec:java -D exec.mainClass=Main
 ```
 
 7. Add the following "Runner/JVM configuration": 
@@ -174,17 +209,18 @@ public Instance solve(Instance i){
     try {
         buildObjectiveFunction(i); // 1. Build the objective function based on i
         buildConstraints(i); // 2. Build the constraints function based on i
-        if(cplex.solve()){ // 3. Cplex found a feasible or optimal solution
-            cplex.output().println("SUCCESS ! Solution status = " + cplex.getStatus()); // 3.1 Print the status of the solution
-            i.solution.displayPath(cplex, i); // 3.2 Display the details of the solution
-        } else // 4. Cplex didn't found any solution
+        cplex.exportModel("./model.lp"); // 3. Export the model to read it
+        if(cplex.solve()){ // 4. Cplex found a feasible or optimal solution
+            cplex.output().println("SUCCESS ! Solution status = " + cplex.getStatus()); // 4.1 Print the status of the solution
+            i.solution.displayPath(cplex, i); // 4.2 Display the details of the solution
+        } else // 5. Cplex didn't found any solution
             cplex.output().println("ERROR ! Solution status = " + cplex.getStatus());
         double end = (System.currentTimeMillis() - start)/1000.0;
-        cplex.output().println("End of computation after: "+end+" seconds"); // 5. Display the final computing time
+        cplex.output().println("End of computation after: "+end+" seconds"); // 6. Display the final computing time
     } catch (IloException e) {
         e.printStackTrace();
     }
-    cplex.end(); // 6. Close the Cplex engine
+    cplex.end(); // 7. Close the Cplex engine
     return i;
 }
 ```

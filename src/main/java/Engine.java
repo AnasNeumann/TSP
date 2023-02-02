@@ -6,7 +6,7 @@ import ilog.cplex.IloCplex;
  * An instance of Cplex engine for Travelling-Salesman Problem
  */
 public class Engine {
-    public static Engine singleton;
+    public static Engine singleton = null;
     public IloCplex cplex;
 
     // 1. Cplex configuration
@@ -39,17 +39,18 @@ public class Engine {
         try {
             buildObjectiveFunction(i); // 1. Build the objective function based on i
             buildConstraints(i); // 2. Build the constraints function based on i
-            if(cplex.solve()){ // 3. Cplex found a feasible or optimal solution
-                cplex.output().println("SUCCESS ! Solution status = " + cplex.getStatus()); // 3.1 Print the status of the solution
-                i.solution.displayPath(cplex, i); // 3.2 Display the details of the solution
-            } else // 4. Cplex didn't found any solution
+            cplex.exportModel("./model.lp"); // 3. Export the model to read it
+            if(cplex.solve()){ // 4. Cplex found a feasible or optimal solution
+                cplex.output().println("SUCCESS ! Solution status = " + cplex.getStatus()); // 4.1 Print the status of the solution
+                i.solution.displayPath(cplex, i); // 4.2 Display the details of the solution
+            } else // 5. Cplex didn't found any solution
                 cplex.output().println("ERROR ! Solution status = " + cplex.getStatus());
             double end = (System.currentTimeMillis() - start)/1000.0;
-            cplex.output().println("End of computation after: "+end+" seconds"); // 5. Display the final computing time
+            cplex.output().println("End of computation after: "+end+" seconds"); // 6. Display the final computing time
         } catch (IloException e) {
             e.printStackTrace();
         }
-        cplex.end(); // 6. Close the Cplex engine
+        cplex.end(); // 7. Close the Cplex engine
         return i;
     }
 
@@ -69,7 +70,6 @@ public class Engine {
         cplex.addMinimize(obj);
     }
 
-
     /**
      * Build exactly three constraints
      * Dantzig–Fulkerson–Johnson formulation
@@ -78,20 +78,69 @@ public class Engine {
      */
     public void buildConstraints(Instance i) throws IloException {
         IloLinearNumExpr totalPaths = cplex.linearNumExpr();
-        for(int v1=0; v1<i.paths.length -1; v1++) {
+        for(int v1=0; v1<i.paths.length; v1++) {
             IloLinearNumExpr totalFromCity = cplex.linearNumExpr();
             IloLinearNumExpr totalToCity   = cplex.linearNumExpr();
-            for (int v2 = v1+1; v2 < i.paths.length; v2++) {
-                totalFromCity.addTerm(1, i.solution.selectedPaths[v1][v2]);
-                totalToCity.addTerm(1, i.solution.selectedPaths[v2][v1]);
-                totalPaths.addTerm(1, i.solution.selectedPaths[v1][v2]);
-                totalPaths.addTerm(1, i.solution.selectedPaths[v2][v1]);
+            for (int v2 = 0; v2 < i.paths.length; v2++) {
+                if(v1 != v2){
+                    totalFromCity.addTerm(1, i.solution.selectedPaths[v1][v2]);
+                    totalToCity.addTerm(1, i.solution.selectedPaths[v2][v1]);
+                    totalPaths.addTerm(1, i.solution.selectedPaths[v1][v2]);
+                }
             }
             cplex.addEq(1, totalFromCity, "C1_"+v1); // C1. Exactly one (no more no less) path is selected to go to a city
             cplex.addEq(1, totalToCity, "C2_"+v1); // C2. Exactly one (no more no less) path is selected to go from a city
         }
+
         // 3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
         if(i.paths.length>=2)
             cplex.addLe(totalPaths, i.paths.length - 1, "C3");
+    }
+
+    /**
+     * Build all the subsets
+     * @param i
+     * @return int[][] subsets
+     */
+    public int[][] buildsubsets(Instance i){
+        int[][] subsets = new int[nbrSubtours(i.paths.length)][];
+        int currentSize = 2;
+        int maxSubtours = nbrSubtours(i.paths.length, currentSize);
+        for(int n=0; n<subsets.length; n++){
+            subsets[n] = new int[n];
+        }
+        return subsets;
+    }
+
+    /**
+     * Nbr possible subtours for nbrCities
+     * @param nbrCities
+     * @return int
+     */
+    public int nbrSubtours(int nbrCities){
+        int total = 0;
+        for(int subSize=2; subSize<nbrCities; subSize++)
+            total += nbrSubtours(nbrCities, subSize);
+        return total;
+    }
+
+    /**
+     * Nbr subtours of size subsize
+     * @param nbrCities
+     * @param subSize
+     * @return int
+     */
+    public int nbrSubtours(int nbrCities, int subSize){
+        return factorial(nbrCities)/(factorial(subSize) * factorial(nbrCities-subSize));
+    }
+
+    /**
+     * Factorial computation
+     * @param n
+     * @return n!
+     */
+    int factorial(int n) {
+        if (n<=0) return 1;
+        return n * factorial(n-1);
     }
 }

@@ -8,6 +8,9 @@
 .idea/**
 **.iml
 .DS_Store
+/target
+/target/**
+model.lp
 
 # Libs
 lib/

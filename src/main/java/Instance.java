@@ -32,6 +32,13 @@ public class Instance {
                 i.paths[v2][v1] = distance;
             }
         }
+        for(int v1=0; v1<size; v1++){
+            for(int v2=0; v2<size; v2++){
+                System.out.print("["+i.paths[v1][v2]+"]");
+            }
+            System.out.print("\n");
+        }
+        System.out.println("Starting city = "+i.start);
         i.solution = Solution.init(size, cplex); // 5. init the solution
         return i;
     }
