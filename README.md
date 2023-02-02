@@ -4,9 +4,9 @@ A simple Travelling Salesman Problem to solve (optimize) with IBM Cplex - Learni
 ![problem-studied](/documentation/problem.png)
 
 ## I. Complete process to install and link Ilog Cplex
-1. Download and install Cplex and Ilog Cplex
+1. Download Cplex and Ilog Cplex from the official website: https://www.ibm.com/products/ilog-cplex-optimization-studio/cplex-optimizer and install the engine on your computer
 
-2. Create a maven project to generate a _pom.xml_ file (used to install external tools like Ilog Cplex)
+2. Create a maven project (in any IDE) to generate a _pom.xml_ file (used to install external tools like Ilog Cplex)
 
 3. Add the following entry to the _pom.xml_ file to install the Ilog Cplex engine and build from the src folder: 
 ```xml
@@ -55,9 +55,9 @@ A simple Travelling Salesman Problem to solve (optimize) with IBM Cplex - Learni
 4. Add the Ilog Cplex folder (downloaded from the IBM website) inside a /lib folder:
 ![cplex-folder](/documentation/cplex.png)
 
-5. Run the commande "_Maven -> Reimport_" to link your code with Ilog Cplex
+5. Run the commande "_Maven -> Reimport_" to link your code with Ilog Cplex (and detect the API classes to use)
 
-6. Create a new Maven running configuration with the following command line
+6. Create a new Maven running configuration (in any IDE) with the following command line
 ```shell
 # Select the correct local path to your main class
 compile exec:java -D exec.mainClass=Main
