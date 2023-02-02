@@ -2,6 +2,10 @@ import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
 import ilog.cplex.IloCplex;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * An instance of Cplex engine for Travelling-Salesman Problem
  */
@@ -92,13 +96,15 @@ public class Engine {
 
         // C3. There is only one start and hence one tour (no sub-tours when more than 2 cities)
         int[][] subsets = buildsubsets(i.paths.length);
+        cplex.output().println("All subset to test: ");
+        cplex.output().println(Arrays.deepToString(subsets));
         for(int sub=0; sub<subsets.length; sub++){
             int[] subset = subsets[sub];
             IloLinearNumExpr totalPaths = cplex.linearNumExpr();
             for(int v1=0; v1<subset.length; v1++)
                 for (int v2=0; v2<subset.length; v2++)
                     if (v1 != v2) totalPaths.addTerm(1, i.solution.selectedPaths[subset[v1]][subset[v2]]);
-            cplex.addLe(totalPaths, subset.length - 1, "C3_"+subset);
+            cplex.addLe(totalPaths, subset.length - 1, "C3_"+Arrays.toString(subset));
         }
     }
 
@@ -111,7 +117,9 @@ public class Engine {
         int[][] subsets = new int[nbrSubtours(nbrCities)][];
         int i = 0;
         for(int currentSize=2; currentSize<nbrCities; currentSize++){
-            int[][] subsetsBySize = buildSubsetsBySize(nbrCities, currentSize);
+            int[][] subsetsBySize = buildPosition(
+                    initSubset(nbrSubtours(nbrCities,currentSize),currentSize),
+                    0,0, nbrCities,currentSize-1,0);
             for(int j=0; j<subsetsBySize.length; j++)
                 subsets[i+j] = subsetsBySize[j];
             i += subsetsBySize.length;
@@ -120,15 +128,40 @@ public class Engine {
     }
 
     /**
-     * Build all the subsets of a specific size
-     * @param nbrCities
-     * @param currentSize
-     * @return int[][] subsets
+     * Build the level position of all subsets starting from startingCity (with a total of citiesToTest)
+     * @param subsets
+     * @param startingCity
+     * @param citiesToTest
+     * @param level
+     * @returnint[][] subsets
      */
-    public int[][] buildSubsetsBySize(int nbrCities, int currentSize){
-        int[][] subsets = new int[nbrSubtours(nbrCities, currentSize)][];
-
+    int[][] buildPosition(int[][] subsets, int startSubsets, int startingCity, int citiesToTest, int level, int positionToFill){
+        int nbrAppearanceAtPosition = 0;
+        int firstAppearance = startSubsets;
+        for(int city=startingCity; city<citiesToTest; city++){
+            firstAppearance = firstAppearance + nbrAppearanceAtPosition;
+            nbrAppearanceAtPosition = nbrSubsets(level,citiesToTest,city);
+            for(int s=firstAppearance; s<firstAppearance+nbrAppearanceAtPosition; s++)
+                subsets[s][positionToFill] = city;
+            if(level>0)
+                buildPosition(subsets,firstAppearance,city+1,citiesToTest,level-1, positionToFill+1);
+        }
         return subsets;
+    }
+
+    /**
+     * Compute the number of subsets, hence the number of appearance of city at level
+     * @param level
+     * @param currentNbrCities
+     * @param city
+     * @return
+     */
+    int nbrSubsets(int level, int currentNbrCities, int city){
+        if(level <= 0) return 1;
+        int totalSubsets = 0;
+        for(int nextCity = city+1; nextCity<currentNbrCities; nextCity++)
+            totalSubsets += nbrSubsets(level-1, currentNbrCities, nextCity);
+        return totalSubsets;
     }
 
     /**
@@ -154,7 +187,20 @@ public class Engine {
     }
 
     /**
-     * Factorial computation
+     * Init subsets
+     * @param s1
+     * @param s2
+     * @return int[][] subsets
+     */
+    public int[][] initSubset(int s1, int s2){
+        int[][] subsets = new int[s1][s2];
+        for(int s=0; s<s1; s++)
+            subsets[s] = new int[s2];
+        return subsets;
+    }
+
+    /**
+     * Factorial computation (RECURSIVE VERSION)
      * @param n
      * @return n!
      */

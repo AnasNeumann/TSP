@@ -46,7 +46,8 @@ public class Solution {
                 cplex.output().print(" -> ("+i.paths[from][to]+") ");
                 from = to;
             }
-        } while(from != 1);
+        } while(from != -1 && from != i.start);
+        cplex.output().println("City_"+from);
     }
 
     /**
